@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Team Daily Poll</title>
+<style>
+  :root{
+    --bg:#0b141a; --panel:#111b21; --panel2:#182229; --line:#233138;
+    --text:#e9edef; --muted:#8696a0; --accent:#00a884; --accent2:#005c4b;
+    --danger:#f15c6d; --warn:#ffb02e; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.5; padding:16px; padding-bottom:64px;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 2px}
+  h2{font-size:16px;margin:0 0 10px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button,.btn{
+    background:var(--accent2);color:#fff;border:1px solid transparent;border-radius:10px;
+    padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
+  }
+  button:hover{filter:brightness(1.12)}
+  button.primary{background:var(--accent)}
+  button.ghost{background:transparent;border-color:var(--line);color:var(--text);font-weight:500}
+  button.danger{background:transparent;border-color:var(--danger);color:var(--danger);font-weight:500}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  input,select,textarea{
+    background:var(--panel2);color:var(--text);border:1px solid var(--line);
+    border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;width:100%;
+  }
+  label{display:block;font-size:12px;color:var(--muted);margin:0 0 4px;text-transform:uppercase;letter-spacing:.04em}
+  .field{margin-bottom:12px}
+  .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .tabs button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-weight:500}
+  .tabs button.on{background:var(--accent2);color:#fff;border-color:transparent;font-weight:600}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+  .cal .dow{text-align:center;font-size:11px;color:var(--muted);padding:4px 0}
+  .cal button{padding:0;height:42px;background:var(--panel2);border:1px solid var(--line);font-weight:500;color:var(--text)}
+  .cal button.today{border-color:var(--accent);color:var(--accent)}
+  .cal button.sel{background:var(--accent);border-color:var(--accent);color:#04231c;font-weight:700}
+  .cal button.has{box-shadow:inset 0 -3px 0 var(--accent2)}
+  .cal .pad{height:42px}
+  .opt{
+    display:flex;align-items:center;gap:10px;padding:11px 12px;margin-bottom:8px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px;cursor:pointer;
+  }
+  .opt.on{border-color:var(--accent);background:#0e2b26}
+  .opt input{width:auto;margin:0;accent-color:var(--accent)}
+  .q{margin-bottom:20px}
+  .q .qt{font-weight:600;margin-bottom:8px}
+  .pill{display:inline-block;font-size:11px;padding:3px 9px;border-radius:999px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+  .pill.live{background:#0e2b26;color:var(--accent);border-color:var(--accent)}
+  .pill.closed{background:#2b1418;color:var(--danger);border-color:var(--danger)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .bar{height:6px;background:var(--panel2);border-radius:999px;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  .msg{padding:12px 14px;border-radius:10px;margin-bottom:12px;font-size:14px}
+  .msg.ok{background:#0e2b26;color:#7ee3c7;border:1px solid var(--accent2)}
+  .msg.err{background:#2b1418;color:#ffb3bc;border:1px solid var(--danger)}
+  .msg.info{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  code{background:var(--panel2);padding:2px 6px;border-radius:5px;font-size:12px;word-break:break-all}
+  .linkbox{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .linkbox input{flex:1;min-width:200px;font-size:12px}
+  .qedit{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel2)}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .hide{display:none!important}
+  footer{color:var(--muted);font-size:11px;text-align:center;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="card"><span class="spin"></span> Loading…</div></div>
+
+<script>
+/* ============================================================
+   TEAM DAILY POLL
+   ------------------------------------------------------------
+   STEP 1: Deploy Code.gs as a Google Apps Script Web App.
+   STEP 2: Paste the /exec URL below between the quotes.
+   ============================================================ */
+var API_URL = "https://script.google.com/macros/s/AKfycbz_e0B4EKbpAPB5sAUzf69hkJrS8RCGp_l9B1hSjQ59VWfyEo9WDVT8Z6NlIuI0BX7G7Q/exec";   // <-- PASTE YOUR APPS SCRIPT WEB APP URL HERE
+
+/* Poll closes every day at 23:59:59 India time (UTC+05:30). */
+var TZ_OFFSET_MIN = 330;
+
+/* Used only if the backend has no saved config yet. */
+var DEFAULT_CONFIG = {
+  title: "Team Daily Poll",
+  passcode: "admin123",
+  members: ["Aarav Sharma","Diya Patel","Rohan Mehta","Ishita Nair","Kabir Singh",
+            "Ananya Rao","Vivaan Joshi","Meera Iyer","Arjun Desai","Sara Khan"],
+  questions: [
+    { id:"q1", text:"SpeakX video uploaded today?",  options:["Yes","No","Partially"], active:true },
+    { id:"q2", text:"Lab work done today?",          options:["Yes","No","Partially"], active:true },
+    { id:"q3", text:"Any queries / blockers today?", options:["No queries","Have queries","Will clear tomorrow"], active:true }
+  ]
+};
+
+/* ---------------- date helpers (fixed IST, device-independent) ---------------- */
+function nowMs(){ return Date.now(); }
+function todayKey(){
+  var d = new Date(nowMs() + TZ_OFFSET_MIN*60000);
+  return d.toISOString().slice(0,10);
+}
+function parseKey(k){ var p=k.split("-"); return {y:+p[0],m:+p[1],d:+p[2]}; }
+function keyOf(y,m,d){ return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0"); }
+function dayStartMs(k){ var p=parseKey(k); return Date.UTC(p.y,p.m-1,p.d,0,0,0) - TZ_OFFSET_MIN*60000; }
+function deadlineMs(k){ return dayStartMs(k) + 24*3600*1000 - 1000; } /* 23:59:59 IST */
+function isOpen(k){ var n=nowMs(); return n>=dayStartMs(k) && n<=deadlineMs(k); }
+function isPast(k){ return nowMs()>deadlineMs(k); }
+function prettyDate(k){
+  var p=parseKey(k), dt=new Date(Date.UTC(p.y,p.m-1,p.d));
+  var dow=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][dt.getUTCDay()];
+  var mon=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][p.m-1];
+  return dow+", "+p.d+" "+mon+" "+p.y;
+}
+function fmtStamp(iso){
+  if(!iso) return "";
+  var t=Date.parse(iso); if(isNaN(t)) return String(iso);
+  var d=new Date(t+TZ_OFFSET_MIN*60000);
+  var h=d.getUTCHours(), ap=h>=12?"pm":"am", h12=h%12||12;
+  return d.toISOString().slice(0,10)+" "+h12+":"+String(d.getUTCMinutes()).padStart(2,"0")+" "+ap;
+}
+function countdown(k){
+  var ms=deadlineMs(k)-nowMs(); if(ms<=0) return "closed";
+  var h=Math.floor(ms/3600000), m=Math.floor(ms%3600000/60000);
+  return h>0 ? h+"h "+m+"m left" : m+"m left";
+}
+
+/* ---------------- transport: JSONP (no CORS problems) ---------------- */
+var _cbN=0;
+function api(action, params){
+  return new Promise(function(res,rej){
+    if(!API_URL){ rej(new Error("NO_API")); return; }
+    var cb="__poll_cb_"+(++_cbN)+"_"+Date.now();
+    var url=API_URL+(API_URL.indexOf("?")<0?"?":"&")+"action="+encodeURIComponent(action)+"&callback="+cb;
+    for(var k in (params||{})) url+="&"+encodeURIComponent(k)+"="+encodeURIComponent(params[k]);
+    var s=document.createElement("script"), done=false;
+    var t=setTimeout(function(){ if(!done){ done=true; cleanup(); rej(new Error("Request timed out")); } },25000);
+    function cleanup(){ clearTimeout(t); try{ delete window[cb]; }catch(e){ window[cb]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
+    window[cb]=function(data){ if(done) return; done=true; cleanup();
+      if(data && data.ok===false) rej(new Error(data.error||"Server error")); else res(data); };
+    s.onerror=function(){ if(!done){ done=true; cleanup(); rej(new Error("Cannot reach the backend")); } };
+    s.src=url; document.body.appendChild(s);
+  });
+}
+
+/* ---------------- state ---------------- */
+var CFG=null, VOTES=[], VIEW="home", TAB="dates", SELDATE=todayKey(), BUSY=false, NOTE=null;
+var ME = localStorage.getItem("poll_me") || "";
+var ADMIN = sessionStorage.getItem("poll_admin")==="1";
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function $(id){ return document.getElementById(id); }
+function note(type,text){ NOTE={type:type,text:text}; render(); }
+
+/* latest answer per date+member+question */
+function latest(){
+  var map={};
+  VOTES.forEach(function(v){
+    var k=v.date+"|"+v.member+"|"+v.qid;
+    if(!map[k] || Date.parse(v.ts)>=Date.parse(map[k].ts)) map[k]=v;
+  });
+  return Object.keys(map).map(function(k){ return map[k]; });
+}
+function forDate(k){ return latest().filter(function(v){ return v.date===k; }); }
+function activeQs(){ return (CFG.questions||[]).filter(function(q){ return q.active!==false; }); }
+function pollUrl(k){
+  var base=location.origin+location.pathname;
+  return base+"?d="+k;
+}
+
+/* ================= BOOT ================= */
+function boot(){
+  var p=new URLSearchParams(location.search);
+  var d=p.get("d");
+  if(d && /^\d{4}-\d{2}-\d{2}$/.test(d)){ VIEW="vote"; SELDATE=d; }
+  if(!API_URL){ CFG=DEFAULT_CONFIG; render(); return; }
+  render();
+  Promise.all([ api("config",{}), api("votes",{}) ]).then(function(r){
+    CFG=(r[0]&&r[0].config)||DEFAULT_CONFIG;
+    VOTES=(r[1]&&r[1].votes)||[];
+    render();
+  }).catch(function(e){
+    CFG=DEFAULT_CONFIG; note("err","Backend error: "+e.message);
+  });
+  setInterval(function(){ if(VIEW==="vote") renderCountdown(); },30000);
+}
+
+function reloadVotes(){
+  return api("votes",{}).then(function(r){ VOTES=(r&&r.votes)||[]; });
+}
+
+/* ================= RENDER ================= */
+function render(){
+  var h="";
+  if(!API_URL) h+=setupBanner();
+  if(NOTE) h+='<div class="msg '+NOTE.type+'">'+esc(NOTE.text)+"</div>";
+  h += (VIEW==="vote") ? voteView() : homeView();
+  h+='<footer>Poll closes daily at 11:59:59 pm IST · records stored permanently</footer>';
+  $("app").innerHTML=h;
+  wire();
+}
+
+function setupBanner(){
+  return '<div class="msg err"><b>Backend not connected.</b><br>'+
+    'Open <code>index.html</code>, find <code>var API_URL = ""</code> near the top of the script and paste your '+
+    'Google Apps Script Web App URL. Until then nothing is saved.</div>';
+}
+
+/* ---------- HOME (admin) ---------- */
+function homeView(){
+  var h='<h1>'+esc(CFG.title||"Team Daily Poll")+'</h1>'+
+    '<p class="sub">Pick a date, generate the poll link, share it on WhatsApp. Answers are stored permanently, day-wise.</p>'+
+    '<div class="tabs">'+
+      tabBtn("dates","Dates &amp; link")+
+      tabBtn("records","Records")+
+      tabBtn("export","Export CSV")+
+      tabBtn("manage","Questions &amp; team")+
+    '</div>';
+  if(TAB==="dates") h+=tabDates();
+  if(TAB==="records") h+=tabRecords();
+  if(TAB==="export") h+=tabExport();
+  if(TAB==="manage") h+=tabManage();
+  return h;
+}
+function tabBtn(id,label){ return '<button data-tab="'+id+'" class="'+(TAB===id?"on":"")+'">'+label+'</button>'; }
+
+function tabDates(){
+  var p=parseKey(SELDATE), y=p.y, m=p.m;
+  var first=new Date(Date.UTC(y,m-1,1)).getUTCDay();
+  var days=new Date(Date.UTC(y,m,0)).getUTCDate();
+  var counts={}; latest().forEach(function(v){ counts[v.date]=(counts[v.date]||0)+1; });
+  var mon=["January","February","March","April","May","June","July","August","September","October","November","December"][m-1];
+
+  var h='<div class="card"><div class="row" style="justify-content:space-between">'+
+    '<button class="ghost" id="pm">&#8249;</button>'+
+    '<h2 style="margin:0">'+mon+" "+y+'</h2>'+
+    '<button class="ghost" id="nm">&#8250;</button></div><div class="cal">';
+  ["S","M","T","W","T","F","S"].forEach(function(d){ h+='<div class="dow">'+d+"</div>"; });
+  for(var i=0;i<first;i++) h+='<div class="pad"></div>';
+  for(var d=1;d<=days;d++){
+    var k=keyOf(y,m,d), cls=[];
+    if(k===todayKey()) cls.push("today");
+    if(k===SELDATE) cls.push("sel");
+    if(counts[k]) cls.push("has");
+    h+='<button data-date="'+k+'" class="'+cls.join(" ")+'">'+d+"</button>";
+  }
+  h+="</div>"+
+    '<div class="row" style="margin-top:12px"><button class="ghost" id="tdy">Jump to today</button></div></div>';
+
+  var st = isOpen(SELDATE) ? '<span class="pill live">Open · '+countdown(SELDATE)+"</span>"
+        : isPast(SELDATE) ? '<span class="pill closed">Closed</span>'
+        : '<span class="pill">Opens 12:00 am</span>';
+  var n=forDate(SELDATE), voters={}; n.forEach(function(v){ voters[v.member]=1; });
+
+  h+='<div class="card"><div class="row" style="justify-content:space-between">'+
+      "<h2>"+prettyDate(SELDATE)+"</h2>"+st+"</div>"+
+    '<p class="muted small" style="margin:6px 0 0">'+Object.keys(voters).length+" of "+
+      (CFG.members||[]).length+" teammates answered · closes 11:59 pm</p>"+
+    '<div class="linkbox"><input id="lnk" readonly value="'+esc(pollUrl(SELDATE))+'">'+
+      '<button class="primary" id="cpy">Copy link</button>'+
+      '<button id="wa">Share on WhatsApp</button>'+
+      '<button class="ghost" id="opn">Preview</button></div></div>';
+  h+=resultsCard(SELDATE);
+  return h;
+}
+
+function resultsCard(k){
+  var rows=forDate(k), qs=CFG.questions||[];
+  if(!rows.length) return '<div class="card"><h2>Responses</h2><p class="muted small">No responses recorded for this date yet.</p></div>';
+  var h='<div class="card"><h2>Responses</h2>';
+  qs.forEach(function(q){
+    var rs=rows.filter(function(v){ return v.qid===q.id; });
+    if(!rs.length) return;
+    h+='<div class="q"><div class="qt">'+esc(q.text)+'</div>';
+    (q.options||[]).forEach(function(o){
+      var who=rs.filter(function(v){ return v.answer===o; }).map(function(v){ return v.member; });
+      var pct=rs.length? Math.round(who.length/rs.length*100):0;
+      h+='<div class="small"><b>'+esc(o)+"</b> — "+who.length+
+         '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
+         (who.length?'<div class="muted" style="margin-top:4px">'+esc(who.join(", "))+"</div>":"")+"</div>";
+    });
+    h+="</div>";
+  });
+  h+='<div class="scroll"><table><tr><th>Teammate</th><th>Answered at</th></tr>';
+  var seen={}; rows.slice().sort(function(a,b){ return Date.parse(a.ts)-Date.parse(b.ts); })
+    .forEach(function(v){ if(!seen[v.member]){ seen[v.member]=1;
+      h+="<tr><td>"+esc(v.member)+"</td><td>"+esc(fmtStamp(v.ts))+"</td></tr>"; } });
+  h+="</table></div></div>";
+  return h;
+}
+
+function tabRecords(){
+  var rows=latest().slice().sort(function(a,b){
+    return a.date===b.date ? Date.parse(a.ts)-Date.parse(b.ts) : (a.date<b.date?1:-1); });
+  var h='<div class="card"><h2>All stored records</h2>'+
+    '<p class="muted small">'+rows.length+' answers · '+
+    Object.keys(rows.reduce(function(a,v){a[v.date]=1;return a;},{})).length+' days</p>'+
+    '<div class="row" style="margin:10px 0"><button class="ghost" id="rl">Refresh</button></div>'+
+    '<div class="scroll"><table><tr><th>Date</th><th>Teammate</th><th>Question</th><th>Answer</th><th>Time</th></tr>';
+  rows.slice(0,400).forEach(function(v){
+    h+="<tr><td>"+esc(v.date)+"</td><td>"+esc(v.member)+"</td><td>"+esc(v.qtext)+
+       "</td><td><b>"+esc(v.answer)+"</b></td><td class='muted'>"+esc(fmtStamp(v.ts))+"</td></tr>";
+  });
+  h+="</table></div>"+(rows.length>400?'<p class="muted small">Showing newest 400. Export CSV for everything.</p>':"")+"</div>";
+  return h;
+}
+
+function tabExport(){
+  var p=parseKey(SELDATE);
+  return '<div class="card"><h2>Export CSV</h2>'+
+    '<p class="muted small">Download the permanent record to show your teacher or open in Excel.</p>'+
+    '<div class="field"><label>Month</label><input type="month" id="mon" value="'+p.y+"-"+String(p.m).padStart(2,"0")+'"></div>'+
+    '<div class="row"><button class="primary" id="csvM">Monthly grid CSV</button>'+
+    '<button id="csvA">Full log CSV (all dates)</button></div>'+
+    '<p class="muted small" style="margin-top:10px">Grid CSV = one row per date + teammate, one column per question. '+
+    'Full log = every answer with its exact timestamp.</p></div>';
+}
+
+function tabManage(){
+  if(!ADMIN){
+    return '<div class="card"><h2>Admin access</h2>'+
+      '<div class="field"><label>Passcode</label><input type="password" id="pc" placeholder="Enter passcode"></div>'+
+      '<button class="primary" id="login">Unlock</button>'+
+      '<p class="muted small" style="margin-top:10px">Default passcode is <code>admin123</code> — change it below after unlocking.</p></div>';
+  }
+  var h='<div class="card"><h2>Questions</h2>'+
+    '<p class="muted small">These apply to every new day. Old records keep the question text they were answered with.</p><div id="qs">';
+  (CFG.questions||[]).forEach(function(q,i){
+    h+='<div class="qedit" data-i="'+i+'">'+
+      '<div class="field"><label>Question '+(i+1)+'</label><input class="qt-in" value="'+esc(q.text)+'"></div>'+
+      '<div class="field"><label>Options (one per line)</label><textarea class="qo-in" rows="3">'+esc((q.options||[]).join("\n"))+'</textarea></div>'+
+      '<div class="row"><label style="margin:0"><input type="checkbox" class="qa-in" style="width:auto" '+(q.active!==false?"checked":"")+'> Active</label>'+
+      '<button class="danger" data-del="'+i+'">Remove</button></div></div>';
+  });
+  h+='</div><div class="row"><button id="addq">+ Add question</button></div></div>'+
+    '<div class="card"><h2>Team members</h2>'+
+    '<div class="field"><label>One name per line</label><textarea id="mem" rows="11">'+esc((CFG.members||[]).join("\n"))+'</textarea></div></div>'+
+    '<div class="card"><h2>Settings</h2>'+
+    '<div class="field"><label>Page title</label><input id="ttl" value="'+esc(CFG.title||"")+'"></div>'+
+    '<div class="field"><label>Admin passcode</label><input id="pcn" value="'+esc(CFG.passcode||"")+'"></div>'+
+    '<div class="row"><button class="primary" id="save"'+(BUSY?" disabled":"")+'>'+
+      (BUSY?'<span class="spin"></span> Saving…':"Save changes")+'</button>'+
+      '<button class="ghost" id="lock">Lock admin</button></div></div>';
+  return h;
+}
+
+/* ---------- VOTE view ---------- */
+function voteView(){
+  var open=isOpen(SELDATE), past=isPast(SELDATE), future=!open&&!past;
+  var mine={}; forDate(SELDATE).filter(function(v){ return v.member===ME; })
+    .forEach(function(v){ mine[v.qid]=v.answer; });
+  var already=Object.keys(mine).length>0;
+
+  var h='<h1>'+esc(CFG.title||"Team Daily Poll")+'</h1>'+
+    '<p class="sub">'+prettyDate(SELDATE)+' · <span id="cd">'+
+      (open?countdown(SELDATE):past?"Closed":"Not started")+"</span></p>";
+
+  if(past) h+='<div class="msg err"><b>This poll is closed.</b> It ended at 11:59 pm on '+esc(SELDATE)+". Your answers can no longer be changed.</div>";
+  if(future) h+='<div class="msg info">This poll opens at 12:00 am on '+esc(SELDATE)+".</div>";
+  if(already&&open) h+='<div class="msg ok">You already answered. You can change your answers until 11:59 pm.</div>';
+
+  h+='<div class="card"><div class="field"><label>Who are you?</label><select id="who"'+(open?"":" disabled")+'>'+
+    '<option value="">— select your name —</option>';
+  (CFG.members||[]).forEach(function(m){
+    h+='<option value="'+esc(m)+'"'+(m===ME?" selected":"")+">"+esc(m)+"</option>"; });
+  h+="</select></div>";
+
+  activeQs().forEach(function(q,qi){
+    h+='<div class="q"><div class="qt">'+(qi+1)+". "+esc(q.text)+"</div>";
+    (q.options||[]).forEach(function(o,oi){
+      var on=mine[q.id]===o;
+      h+='<label class="opt '+(on?"on":"")+'"><input type="radio" name="'+esc(q.id)+'" value="'+esc(o)+'"'+
+         (on?" checked":"")+(open?"":" disabled")+"> <span>"+esc(o)+"</span></label>";
+    });
+    h+="</div>";
+  });
+
+  if(open) h+='<button class="primary" id="sub" style="width:100%"'+(BUSY?" disabled":"")+'>'+
+    (BUSY?'<span class="spin"></span> Saving…':(already?"Update my answers":"Submit my answers"))+"</button>";
+  h+="</div>";
+  h+=resultsCard(SELDATE);
+  return h;
+}
+function renderCountdown(){ var e=$("cd"); if(e&&isOpen(SELDATE)) e.textContent=countdown(SELDATE); }
+
+/* ================= EVENTS ================= */
+function wire(){
+  document.querySelectorAll("[data-tab]").forEach(function(b){
+    b.onclick=function(){ TAB=b.dataset.tab; NOTE=null; render(); }; });
+  document.querySelectorAll("[data-date]").forEach(function(b){
+    b.onclick=function(){ SELDATE=b.dataset.date; NOTE=null; render(); }; });
+
+  var pm=$("pm"), nm=$("nm"), tdy=$("tdy");
+  if(pm) pm.onclick=function(){ shiftMonth(-1); };
+  if(nm) nm.onclick=function(){ shiftMonth(1); };
+  if(tdy) tdy.onclick=function(){ SELDATE=todayKey(); render(); };
+
+  var cpy=$("cpy"); if(cpy) cpy.onclick=function(){
+    var i=$("lnk"); i.select(); i.setSelectionRange(0,99999);
+    try{ document.execCommand("copy"); note("ok","Link copied. Paste it in your WhatsApp group."); }
+    catch(e){ note("info","Copy the link from the box above."); } };
+  var wa=$("wa"); if(wa) wa.onclick=function(){
+    var t="*"+(CFG.title||"Daily Poll")+"* — "+prettyDate(SELDATE)+
+      "\nPlease fill today's poll before 11:59 pm:\n"+pollUrl(SELDATE);
+    window.open("https://wa.me/?text="+encodeURIComponent(t),"_blank"); };
+  var opn=$("opn"); if(opn) opn.onclick=function(){ window.open(pollUrl(SELDATE),"_blank"); };
+  var rl=$("rl"); if(rl) rl.onclick=function(){ reloadVotes().then(function(){ note("ok","Records refreshed."); })
+    .catch(function(e){ note("err",e.message); }); };
+
+  var csvM=$("csvM"); if(csvM) csvM.onclick=function(){ exportGrid($("mon").value); };
+  var csvA=$("csvA"); if(csvA) csvA.onclick=exportLog;
+
+  var login=$("login"); if(login) login.onclick=function(){
+    if($("pc").value===(CFG.passcode||"admin123")){ ADMIN=true; sessionStorage.setItem("poll_admin","1"); NOTE=null; render(); }
+    else note("err","Wrong passcode."); };
+  var lock=$("lock"); if(lock) lock.onclick=function(){ ADMIN=false; sessionStorage.removeItem("poll_admin"); render(); };
+  var addq=$("addq"); if(addq) addq.onclick=function(){
+    collectManage();
+    CFG.questions.push({id:"q"+Date.now(),text:"New question",options:["Yes","No"],active:true}); render(); };
+  document.querySelectorAll("[data-del]").forEach(function(b){ b.onclick=function(){
+    collectManage(); CFG.questions.splice(+b.dataset.del,1); render(); }; });
+  var save=$("save"); if(save) save.onclick=saveConfig;
+
+  document.querySelectorAll(".opt input").forEach(function(r){ r.onchange=function(){
+    r.closest(".q").querySelectorAll(".opt").forEach(function(o){ o.classList.remove("on"); });
+    r.closest(".opt").classList.add("on"); }; });
+  var who=$("who"); if(who) who.onchange=function(){
+    ME=who.value; localStorage.setItem("poll_me",ME); NOTE=null; render(); };
+  var sub=$("sub"); if(sub) sub.onclick=submitVote;
+}
+
+function shiftMonth(n){
+  var p=parseKey(SELDATE), m=p.m+n, y=p.y;
+  if(m<1){m=12;y--;} if(m>12){m=1;y++;}
+  var max=new Date(Date.UTC(y,m,0)).getUTCDate();
+  SELDATE=keyOf(y,m,Math.min(p.d,max)); render();
+}
+
+function collectManage(){
+  var qs=[];
+  document.querySelectorAll(".qedit").forEach(function(el,i){
+    var old=CFG.questions[+el.dataset.i]||{};
+    qs.push({
+      id: old.id || "q"+(i+1)+"_"+Date.now(),
+      text: el.querySelector(".qt-in").value.trim() || ("Question "+(i+1)),
+      options: el.querySelector(".qo-in").value.split("\n").map(function(s){return s.trim();}).filter(Boolean),
+      active: el.querySelector(".qa-in").checked
+    });
+  });
+  if(qs.length) CFG.questions=qs;
+  var mem=$("mem"); if(mem) CFG.members=mem.value.split("\n").map(function(s){return s.trim();}).filter(Boolean);
+  var ttl=$("ttl"); if(ttl) CFG.title=ttl.value.trim()||"Team Daily Poll";
+  var pcn=$("pcn"); if(pcn) CFG.passcode=pcn.value.trim()||"admin123";
+}
+
+function saveConfig(){
+  collectManage();
+  if(!API_URL){ note("err","Connect the backend first (API_URL)."); return; }
+  BUSY=true; render();
+  api("saveConfig",{ passcode:CFG.passcode, config:JSON.stringify(CFG) })
+    .then(function(){ BUSY=false; note("ok","Saved. Everyone sees the updated poll from now on."); })
+    .catch(function(e){ BUSY=false; note("err","Could not save: "+e.message); });
+}
+
+function submitVote(){
+  if(!ME){ note("err","Please select your name first."); return; }
+  if(!isOpen(SELDATE)){ note("err","This poll is closed."); return; }
+  var answers=[], missing=false;
+  activeQs().forEach(function(q){
+    var el=document.querySelector('input[name="'+q.id+'"]:checked');
+    if(!el){ missing=true; return; }
+    answers.push({qid:q.id,qtext:q.text,answer:el.value});
+  });
+  if(missing){ note("err","Please answer all the questions."); return; }
+  if(!API_URL){ note("err","Backend not connected — your answer cannot be saved."); return; }
+  BUSY=true; render();
+  api("vote",{ date:SELDATE, member:ME, payload:JSON.stringify(answers) })
+    .then(function(){ return reloadVotes(); })
+    .then(function(){ BUSY=false; note("ok","Thank you! Your answers are recorded for "+SELDATE+"."); })
+    .catch(function(e){ BUSY=false; note("err","Not saved: "+e.message); });
+}
+
+/* ================= CSV ================= */
+function dl(name,text){
+  var b=new Blob(["﻿"+text],{type:"text/csv;charset=utf-8;"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+}
+function cell(s){ return '"'+String(s==null?"":s).replace(/"/g,'""')+'"'; }
+
+function exportGrid(mon){
+  var rows=latest().filter(function(v){ return !mon || v.date.slice(0,7)===mon; });
+  if(!rows.length){ note("err","No records for that month."); return; }
+  var qs=CFG.questions||[];
+  var head=["Date","Teammate"].concat(qs.map(function(q){return q.text;})).concat(["Submitted at"]);
+  var byK={};
+  rows.forEach(function(v){
+    var k=v.date+"|"+v.member;
+    byK[k]=byK[k]||{date:v.date,member:v.member,ans:{},ts:v.ts};
+    byK[k].ans[v.qid]=v.answer;
+    if(Date.parse(v.ts)>Date.parse(byK[k].ts)) byK[k].ts=v.ts;
+  });
+  var out=[head.map(cell).join(",")];
+  Object.keys(byK).sort().forEach(function(k){
+    var r=byK[k];
+    out.push([cell(r.date),cell(r.member)]
+      .concat(qs.map(function(q){ return cell(r.ans[q.id]||"No response"); }))
+      .concat([cell(fmtStamp(r.ts))]).join(","));
+  });
+  dl("poll-grid-"+(mon||"all")+".csv", out.join("\n"));
+  note("ok","CSV downloaded.");
+}
+function exportLog(){
+  if(!VOTES.length){ note("err","No records yet."); return; }
+  var out=[["Date","Teammate","Question","Answer","Submitted at (IST)","Raw timestamp"].map(cell).join(",")];
+  VOTES.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:Date.parse(a.ts)-Date.parse(b.ts); })
+    .forEach(function(v){
+      out.push([cell(v.date),cell(v.member),cell(v.qtext),cell(v.answer),cell(fmtStamp(v.ts)),cell(v.ts)].join(","));
+    });
+  dl("poll-full-log.csv", out.join("\n"));
+  note("ok","CSV downloaded.");
+}
+
+boot();
+</script>
+</body>
+</html>
