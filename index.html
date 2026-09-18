@@ -92,7 +92,7 @@
    STEP 1: Deploy Code.gs as a Google Apps Script Web App.
    STEP 2: Paste the /exec URL below between the quotes.
    ============================================================ */
-var API_URL = "https://script.google.com/macros/s/AKfycbz_e0B4EKbpAPB5sAUzf69hkJrS8RCGp_l9B1hSjQ59VWfyEo9WDVT8Z6NlIuI0BX7G7Q/exec";   // <-- PASTE YOUR APPS SCRIPT WEB APP URL HERE
+var API_URL = "https://script.google.com/macros/s/AKfycbz_e0B4EKbpAPB5sAUzf69hkJrS8RCGp_l9B1hSjQ59VWfyEo9WDVT8Z6NlIuI0BX7G7Q/exec";
 
 /* Poll closes every day at 23:59:59 India time (UTC+05:30). */
 var TZ_OFFSET_MIN = 330;
@@ -190,15 +190,21 @@ function boot(){
   var p=new URLSearchParams(location.search);
   var d=p.get("d");
   if(d && /^\d{4}-\d{2}-\d{2}$/.test(d)){ VIEW="vote"; SELDATE=d; }
-  if(!API_URL){ CFG=DEFAULT_CONFIG; render(); return; }
+
+  CFG=DEFAULT_CONFIG;          /* placeholder so the page can draw immediately */
   render();
-  Promise.all([ api("config",{}), api("votes",{}) ]).then(function(r){
-    CFG=(r[0]&&r[0].config)||DEFAULT_CONFIG;
-    VOTES=(r[1]&&r[1].votes)||[];
+  if(!API_URL) return;
+
+  api("config",{}).then(function(r){
+    if(r&&r.config) CFG=r.config;
     render();
-  }).catch(function(e){
-    CFG=DEFAULT_CONFIG; note("err","Backend error: "+e.message);
-  });
+  }).catch(function(e){ note("err","Could not load settings: "+e.message); });
+
+  api("votes",{}).then(function(r){
+    VOTES=(r&&r.votes)||[];
+    render();
+  }).catch(function(e){ note("err","Could not load saved records: "+e.message); });
+
   setInterval(function(){ if(VIEW==="vote") renderCountdown(); },30000);
 }
 
@@ -208,13 +214,21 @@ function reloadVotes(){
 
 /* ================= RENDER ================= */
 function render(){
+  if(!CFG) CFG=DEFAULT_CONFIG;
+  if(!CFG.questions||!CFG.questions.length) CFG.questions=DEFAULT_CONFIG.questions;
+  if(!CFG.members) CFG.members=[];
   var h="";
-  if(!API_URL) h+=setupBanner();
-  if(NOTE) h+='<div class="msg '+NOTE.type+'">'+esc(NOTE.text)+"</div>";
-  h += (VIEW==="vote") ? voteView() : homeView();
-  h+='<footer>Poll closes daily at 11:59:59 pm IST · records stored permanently</footer>';
+  try{
+    if(!API_URL) h+=setupBanner();
+    if(NOTE) h+='<div class="msg '+NOTE.type+'">'+esc(NOTE.text)+"</div>";
+    h += (VIEW==="vote") ? voteView() : homeView();
+    h+='<footer>Poll closes daily at 11:59:59 pm IST · records stored permanently</footer>';
+  }catch(err){
+    h='<div class="msg err"><b>Page error:</b> '+esc(err.message)+
+      '<br>Try a hard refresh (Ctrl+Shift+R).</div>';
+  }
   $("app").innerHTML=h;
-  wire();
+  try{ wire(); }catch(e){}
 }
 
 function setupBanner(){
