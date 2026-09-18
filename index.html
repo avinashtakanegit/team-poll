@@ -150,7 +150,7 @@ function api(action, params){
     var url=API_URL+(API_URL.indexOf("?")<0?"?":"&")+"action="+encodeURIComponent(action)+"&callback="+cb;
     for(var k in (params||{})) url+="&"+encodeURIComponent(k)+"="+encodeURIComponent(params[k]);
     var s=document.createElement("script"), done=false;
-    var t=setTimeout(function(){ if(!done){ done=true; cleanup(); rej(new Error("Request timed out")); } },25000);
+    var t=setTimeout(function(){ if(!done){ done=true; cleanup(); rej(new Error("Request timed out")); } },60000);
     function cleanup(){ clearTimeout(t); try{ delete window[cb]; }catch(e){ window[cb]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
     window[cb]=function(data){ if(done) return; done=true; cleanup();
       if(data && data.ok===false) rej(new Error(data.error||"Server error")); else res(data); };
@@ -505,10 +505,29 @@ function submitVote(){
   if(missing){ note("err","Please answer all the questions."); return; }
   if(!API_URL){ note("err","Backend not connected — your answer cannot be saved."); return; }
   BUSY=true; render();
+  var ts=new Date().toISOString();
+  function mineSaved(){
+    return forDate(SELDATE).filter(function(v){ return v.member===ME; }).length>0;
+  }
   api("vote",{ date:SELDATE, member:ME, payload:JSON.stringify(answers) })
-    .then(function(){ return reloadVotes(); })
-    .then(function(){ BUSY=false; note("ok","Thank you! Your answers are recorded for "+SELDATE+"."); })
-    .catch(function(e){ BUSY=false; note("err","Not saved: "+e.message); });
+    .then(function(){
+      /* show it instantly; refresh from the server in the background */
+      answers.forEach(function(a){
+        VOTES.push({ts:ts,date:SELDATE,member:ME,qid:a.qid,qtext:a.qtext,answer:a.answer});
+      });
+      BUSY=false; note("ok","Thank you! Your answers are recorded for "+SELDATE+".");
+      reloadVotes().then(render).catch(function(){});
+    })
+    .catch(function(e){
+      BUSY=false;
+      /* a slow reply does not mean it failed — check the server before alarming anyone */
+      reloadVotes().then(function(){
+        if(mineSaved()) note("ok","Saved. The connection was slow, but your answers are recorded.");
+        else note("err","Not saved ("+e.message+"). Please tap Submit once more.");
+      }).catch(function(){
+        note("err","Not saved ("+e.message+"). Please tap Submit once more.");
+      });
+    });
 }
 
 /* ================= CSV ================= */
